@@ -8,6 +8,8 @@ import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.LdapTemplate;
 import static org.springframework.ldap.query.LdapQueryBuilder.query;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import ua.org.ubts.stats.entity.GroupEntity;
 import ua.org.ubts.stats.entity.OrganizationEntity;
 import ua.org.ubts.stats.entity.ProgramEntity;
@@ -23,7 +25,6 @@ import ua.org.ubts.stats.service.UserService;
 
 import javax.naming.NamingException;
 import javax.naming.directory.Attributes;
-import javax.transaction.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -31,7 +32,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-@Transactional
 @Slf4j
 public class SynchronizationServiceImpl implements SynchronizationService {
 
@@ -147,7 +147,8 @@ public class SynchronizationServiceImpl implements SynchronizationService {
                 .orElseThrow(() -> new DatabaseItemNotFoundException(UBTS_NOT_FOUND_ERROR_MESSAGE));
     }
 
-    private void synchronizeStudents() {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void synchronizeStudents() {
         log.info("Synchronizing users...");
 
         List<User> ldapUsers = ldapTemplate.search(
@@ -160,7 +161,7 @@ public class SynchronizationServiceImpl implements SynchronizationService {
                 .filter(ldapUser -> savedLdapUsers.stream()
                         .noneMatch(userEntity -> userEntity.getLogin().equals(ldapUser.getLogin())))
                 .forEach(ldapUser -> {
-                    log.info("Adding users: {}", ldapUser.getLogin());
+                    log.info("Adding user: {}", ldapUser.getLogin());
                     UserEntity userEntity = new UserEntity();
                     userEntity.setLogin(ldapUser.getLogin());
                     userEntity.setFirstName(ldapUser.getFirstName());
@@ -180,7 +181,8 @@ public class SynchronizationServiceImpl implements SynchronizationService {
         log.info("User synchronization complete.");
     }
 
-    private void synchronizeGroups() {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void synchronizeGroups() {
         log.info("Synchronizing groups...");
 
         List<Group> ldapGroups = ldapTemplate.search(
@@ -199,11 +201,11 @@ public class SynchronizationServiceImpl implements SynchronizationService {
                 log.info("Assigning user {} to group {}", user.getLogin(), ldapGroup.getName());
                 UserEntity userEntity = userService.getUser(user.getLogin());
                 userEntity.setGroup(groupEntity);
-                userRepository.save(userEntity);
                 users.add(userEntity);
             });
             groupEntity.setUsers(users);
             groupRepository.save(groupEntity);
+            userRepository.saveAll(users);
         });
         savedLdapGroups.stream()
                 .filter(groupEntity -> ldapGroups.stream()
@@ -216,7 +218,8 @@ public class SynchronizationServiceImpl implements SynchronizationService {
         log.info("Group synchronization complete.");
     }
 
-    private void synchronizePrograms() {
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void synchronizePrograms() {
         log.info("Synchronizing programs...");
 
         List<Program> ldapPrograms = ldapTemplate.search(
@@ -235,12 +238,12 @@ public class SynchronizationServiceImpl implements SynchronizationService {
                 log.info("Assigning group {} to program {}", group.getName(), ldapProgram.getName());
                 GroupEntity groupEntity = getGroupOrThrow(group.getName());
                 groupEntity.setProgram(programEntity);
-                groupRepository.save(groupEntity);
                 groups.add(groupEntity);
             });
             programEntity.setGroups(groups);
             programEntity.setOrganization(getUbtsOrThrow());
             programRepository.save(programEntity);
+            groupRepository.saveAll(groups);
         });
         savedLdapPrograms.stream()
                 .filter(programEntity -> ldapPrograms.stream()

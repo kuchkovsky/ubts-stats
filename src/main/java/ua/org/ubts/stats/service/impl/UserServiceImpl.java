@@ -89,7 +89,7 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new RuntimeException("What about ROLE_USER in DB, the greatest dev(ops)???")));
         userEntity.setRoles(roleEntities);
         userRepository.save(userEntity);
-        log.info("New users account created: {}", userEntity.getLogin());
+        log.info("New user account created: {}", userEntity.getLogin());
     }
 
     @Override

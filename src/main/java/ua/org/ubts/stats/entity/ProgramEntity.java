@@ -26,7 +26,7 @@ public class ProgramEntity extends BaseEntity<Integer> {
     @OneToMany(mappedBy = "program")
     private List<GroupEntity> groups;
 
-    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.PERSIST)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.MERGE)
     @JoinColumn(name = "organization_id")
     private OrganizationEntity organization;
 
