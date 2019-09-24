@@ -24,6 +24,7 @@ import ua.org.ubts.stats.service.SynchronizationService;
 import ua.org.ubts.stats.service.UserService;
 
 import javax.naming.NamingException;
+import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -75,6 +76,8 @@ public class SynchronizationServiceImpl implements SynchronizationService {
         private String login;
         private String firstName;
         private String lastName;
+        private String phone1;
+        private String phone2;
     }
 
     private static class UserAttributesMapper implements AttributesMapper<User> {
@@ -84,6 +87,19 @@ public class SynchronizationServiceImpl implements SynchronizationService {
             user.setLogin((String) attrs.get("sAMAccountName").get());
             user.setFirstName((String) attrs.get("givenName").get());
             user.setLastName((String) attrs.get("sn").get());
+            Attribute phoneAttr = attrs.get("telephoneNumber");
+            if (phoneAttr != null) {
+                String phoneValue = (String) phoneAttr.get();
+                if (phoneValue != null) {
+                    String[] phones = phoneValue.split("[\\s;,]+");
+                    if (phones.length > 0) {
+                        user.setPhone1(phones[0]);
+                        if (phones.length > 1) {
+                            user.setPhone2(phones[1]);
+                        }
+                    }
+                }
+            }
             return user;
         }
 
@@ -168,7 +184,18 @@ public class SynchronizationServiceImpl implements SynchronizationService {
                     userEntity.setLastName(ldapUser.getLastName());
                     userEntity.setPassword("N/A");
                     userEntity.setLdapUser(true);
+                    userEntity.setPhone1(ldapUser.getPhone1());
+                    userEntity.setPhone2(ldapUser.getPhone2());
                     userService.createUser(userEntity);
+                });
+        ldapUsers.stream().filter(ldapUser -> savedLdapUsers.stream()
+                .anyMatch(userEntity -> userEntity.getLogin().equals(ldapUser.getLogin())))
+                .forEach(ldapUser -> {
+                    log.info("Updating user: {}", ldapUser.getLogin());
+                    UserEntity userEntity = userService.getUser(ldapUser.getLogin());
+                    userEntity.setPhone1(ldapUser.getPhone1());
+                    userEntity.setPhone2(ldapUser.getPhone2());
+                    userRepository.save(userEntity);
                 });
         userService.getLdapUsers().stream()
                 .filter(userEntity -> ldapUsers.stream()

@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import ua.org.ubts.stats.dto.MessengerIdDto;
 import ua.org.ubts.stats.entity.RoleEntity;
 import ua.org.ubts.stats.entity.UserEntity;
 import ua.org.ubts.stats.exception.UserAlreadyExistsException;
@@ -27,7 +28,8 @@ import java.util.stream.Collectors;
 public class UserServiceImpl implements UserService {
 
     private static final String USER_ID_NOT_FOUND_MESSAGE = "Could not find users with id=";
-    private static final String USER_LOGIN_NOT_FOUND_MESSAGE = "Could not find users with login=";
+    private static final String USER_LOGIN_NOT_FOUND_MESSAGE = "Could not find user with login=";
+    private static final String USER_TELEGRAM_ID_NOT_FOUND_MESSAGE = "Could not find user with telegramId=";
     private static final String USER_ALREADY_EXISTS_MESSAGE = "User with login=%s already exists";
 
     @Autowired
@@ -45,6 +47,10 @@ public class UserServiceImpl implements UserService {
 
     private static Supplier<UserNotFoundException> supplyUserNotFoundException(Long id) {
         return () -> new UserNotFoundException(USER_ID_NOT_FOUND_MESSAGE + id);
+    }
+
+    private static Supplier<UserNotFoundException> supplyUserNotFoundExceptionByTelegram(String telegramId) {
+        return () -> new UserNotFoundException(USER_TELEGRAM_ID_NOT_FOUND_MESSAGE + telegramId);
     }
 
     @Override
@@ -69,6 +75,17 @@ public class UserServiceImpl implements UserService {
     public UserEntity getUser(Authentication authentication) {
         String login = ((String) authentication.getPrincipal());
         return getUser(login);
+    }
+
+    @Override
+    public UserEntity getUserByTelegramId(String telegramId) {
+        return userRepository.findByTelegramId(telegramId)
+                .orElseThrow(supplyUserNotFoundExceptionByTelegram(telegramId));
+    }
+
+    @Override
+    public List<UserEntity> getUsers(Boolean ldap, String phone) {
+        return userRepository.findAll(ldap, phone);
     }
 
     @Override
@@ -113,6 +130,13 @@ public class UserServiceImpl implements UserService {
         UserEntity user = getUser(id);
         userRepository.deleteById(id);
         log.info("User deleted: {}", user.getLogin());
+    }
+
+    @Override
+    public void setUserMessengerIds(Long id, MessengerIdDto messengerIds) {
+        UserEntity userEntity = getUser(id);
+        userEntity.setTelegramId(messengerIds.getTelegram());
+        userRepository.save(userEntity);
     }
 
 }

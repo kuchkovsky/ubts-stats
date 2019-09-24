@@ -48,6 +48,15 @@ public class UserEntity extends BaseEntity<Long> {
     @JoinColumn(name = "group_id")
     private GroupEntity group;
 
+    @Column(name = "phone1")
+    private String phone1;
+
+    @Column(name = "phone2")
+    private String phone2;
+
+    @Column(name = "telegram_id")
+    private String telegramId;
+
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof UserEntity) {
@@ -55,6 +64,11 @@ public class UserEntity extends BaseEntity<Long> {
             return this.getLogin().equals(userEntity.getLogin());
         }
         return false;
+    }
+
+    @Override
+    public String toString() {
+        return String.valueOf(getId());
     }
 
 }

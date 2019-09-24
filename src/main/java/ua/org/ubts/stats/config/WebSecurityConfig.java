@@ -1,6 +1,7 @@
 package ua.org.ubts.stats.config;
 
 import io.jsonwebtoken.impl.crypto.MacProvider;
+import org.springframework.http.HttpMethod;
 import ua.org.ubts.stats.providers.LdapAwareDaoAuthenticationProvider;
 import ua.org.ubts.stats.filter.JwtAuthenticationFilter;
 import ua.org.ubts.stats.filter.JwtAuthorizationFilter;
@@ -45,8 +46,11 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
+        String adminOrLocalhostIpv6 = "hasRole('ADMIN') or hasIpAddress('::1')";
         http.cors().and().csrf().disable()
                 .authorizeRequests()
+                .antMatchers(HttpMethod.GET, "/users/**", "/records/**").access(adminOrLocalhostIpv6)
+                .antMatchers(HttpMethod.POST, "/users/**", "/records/**").access(adminOrLocalhostIpv6)
                 .antMatchers("/swagger-ui.html", "/webjars/**", "/swagger-resources/**", "/v2/api-docs").permitAll()
                 .anyRequest().authenticated()
                 .and()

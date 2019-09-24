@@ -10,6 +10,8 @@ public interface RecordService {
 
     void createRecord(RecordEntity recordEntity, Principal principal);
 
+    void createRecord(RecordEntity recordEntity, Long id);
+
     List<RecordEntity> getRecords(LocalDate startDate,
                                   LocalDate endDate,
                                   String groupName,
@@ -17,5 +19,9 @@ public interface RecordService {
                                   String organizationName);
 
     List<RecordEntity> getUserRecords(LocalDate date, Principal principal);
+
+    List<RecordEntity> getUserRecords(LocalDate date, Long id);
+
+    List<RecordEntity> getUserRecords(LocalDate date);
 
 }
