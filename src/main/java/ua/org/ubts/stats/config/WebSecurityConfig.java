@@ -49,8 +49,9 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         String adminOrLocalhostIpv6 = "hasRole('ADMIN') or hasIpAddress('::1')";
         http.cors().and().csrf().disable()
                 .authorizeRequests()
-                .antMatchers(HttpMethod.GET, "/users/**", "/records/**").access(adminOrLocalhostIpv6)
-                .antMatchers(HttpMethod.POST, "/users/**", "/records/**").access(adminOrLocalhostIpv6)
+                .antMatchers(HttpMethod.GET, "/records/my").access("hasRole('USER')")
+                .antMatchers(HttpMethod.GET, "/users", "/users/telegram_id/*", "/records/*").access(adminOrLocalhostIpv6)
+                .antMatchers(HttpMethod.POST, "/users/*/messenger_ids", "/records/*").access(adminOrLocalhostIpv6)
                 .antMatchers("/swagger-ui.html", "/webjars/**", "/swagger-resources/**", "/v2/api-docs").permitAll()
                 .anyRequest().authenticated()
                 .and()

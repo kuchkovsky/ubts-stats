@@ -53,7 +53,6 @@ public class RecordController {
         ));
     }
 
-    @PreAuthorize("hasRole('USER')")
     @GetMapping("/my")
     public List<RecordDto> getUserRecords(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
                                           Principal principal) {
